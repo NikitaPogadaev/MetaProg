@@ -21,7 +21,7 @@ inline constexpr std::ptrdiff_t dynamic_stride = -1;
 template <std::ptrdiff_t stride> 
 class StrideBase {
 protected: 
-  static consteval std::ptrdiff_t Stride() {return stride;}
+  static constexpr ::ptrdiff_t Stride() {return stride;}
 
   StrideBase(std::ptrdiff_t){};
   StrideBase() = default;
@@ -45,7 +45,7 @@ template <std::size_t extent, std::ptrdiff_t stride>
 class ExtentBase : protected StrideBase<stride>{
 protected:
   using StrideBase<stride>::Stride;
-  static consteval std::size_t Size() {return extent;}
+  static constexpr std::size_t Size() {return extent;}
   
   ExtentBase(size_t size, std::ptrdiff_t step) : StrideBase<stride>(step) {}
   ExtentBase() = default;
