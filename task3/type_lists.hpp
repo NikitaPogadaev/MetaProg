@@ -332,4 +332,109 @@ template<template<typename, typename> typename P, Empty TL, typename First>
 struct Filter2P<P, TL, First> : Nil{};
 
 
+/**/
+
+template <typename T, TypeList TL, std::size_t N>
+struct PairReplace {
+    using Head = typename TL::Head;
+    using Tail = PairReplace<T, typename TL::Tail, N - 1>;
+};
+
+template <typename T, Empty TL, std::size_t N> 
+struct PairReplace<T, TL, N> : Nil {};
+
+template <typename T, TypeSequence TL>
+struct PairReplace<T, TL, 0> {
+    using Head = T;
+    using Tail = typename TL::Tail;
+};
+
+
+template<TypeSequence TL, std::size_t N>
+struct GetElementN : GetElementN<typename TL::Tail, N - 1> {};
+
+template<TypeSequence TL>
+struct GetElementN<TL, 0> {
+    using Element = typename TL::Head;
+};
+
+
+
+template<template<typename, typename> typename P, TypeList TLPref, typename Mid, TypeList TLSuf, std::size_t I, std::size_t N>
+struct TopSortHelper;
+
+template<template<typename, typename> typename P, TypeList TLPref, typename Mid, TypeList TLSuf, std::size_t I, std::size_t N>
+requires(I < N && P<Mid, typename GetElementN<TLSuf, I>::Element>::Value && N > 0)
+struct TopSortHelper<P, TLPref, Mid, TLSuf, I, N> {
+    using Result = TopSortHelper<P, TLPref, Mid, TLSuf, I + 1, N>::Result;
+};
+
+template<template<typename, typename> typename P, TypeList TLPref, typename Mid, TypeList TLSuf, std::size_t I, std::size_t N>
+requires(I < N && !P<Mid, typename GetElementN<TLSuf, I>::Element>::Value && N > 0)
+struct TopSortHelper<P, TLPref, Mid, TLSuf, I, N> {
+    using Result = TopSortHelper<P, TLPref, typename GetElementN<TLSuf, I>::Element, PairReplace<Mid, TLSuf, I>, I + 1, N>::Result;
+};
+
+template<template<typename, typename> typename P, TypeList TLPref, typename Mid, TypeList TLSuf, std::size_t I, std::size_t N>
+requires(I == N  && N > 0)
+struct TopSortHelper<P, TLPref, Mid, TLSuf, I, N>  {
+    using Result = TopSortHelper<P, Cons<Mid, TLPref>, typename TLSuf::Head, typename TLSuf::Tail, 0, N - 1>::Result;   
+};
+
+template<template<typename, typename> typename P, TypeList TLPref, typename Mid, TypeList TLSuf, std::size_t I>
+struct TopSortHelper<P, TLPref, Mid, TLSuf, I, 0>  {
+    using Result = Cons<Mid, TLPref>;   
+};
+
+
+template<template<typename, typename> typename P, TypeList TL>
+struct TopSort {
+    using SortedList = typename TopSortHelper<P, Nil, typename TL::Head, typename TL::Tail, 0, ListSize<typename TL::Tail>>::Result;
+};
+
+template<template<typename, typename> typename P, Empty TL>
+struct TopSort<P, TL> {
+    using SortedList = Nil;
+};
+
+// template<class X, class Y>
+// struct InheritPredicate{
+//     static constexpr bool Value = !std::derived_from<X, Y>;
+// };
+
+// struct Base{int x1;};
+// struct A : Base{int x2;};
+// struct B : A{int x3;};
+// struct C : B{int x4;};
+// struct D {int x5;};
+
+
+// static_assert(std::is_same<
+
+// ToTuple<
+// TopSort<
+// InheritPredicate, FromTuple<
+// type_tuples::TTuple<A, B, D, B, C, A>
+// >
+// >
+// >, 
+// type_tuples::TTuple<C, B, B, D, A, A>
+
+// >);
+
+// static_assert(
+// std::is_same_v<
+//     ToTuple<
+//         TopSort<
+//             InheritPredicate, 
+//             FromTuple<
+//             type_tuples::TTuple<A, B, D, B, C, A>
+//             >
+//         >::SortedList
+//     >
+// , type_tuples::TTuple<C, B, B, D, A, A>
+// >);
+
+
+
 } // namespace type_lists
